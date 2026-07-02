@@ -3,18 +3,16 @@ import dash
 from dash import dcc, html, Input, Output
 import plotly.express as px
 
-# Load data
+# Load data (safe)
 df = pd.read_csv("output.csv")
-df["date"] = pd.to_datetime(df["date"])
-df = df.sort_values("date")
 
+# Dash app (IMPORTANT for tests)
 app = dash.Dash(__name__)
+server = app.server
 
-app.layout = html.Div(style={"fontFamily": "Arial", "padding": "20px"}, children=[
-
-    html.H1("Soul Foods Sales Visualiser", style={"textAlign": "center"}),
-
-    html.H3("Filter by Region"),
+# Layout (must be simple)
+app.layout = html.Div([
+    html.H1("Soul Foods Sales Visualiser"),
 
     dcc.RadioItems(
         id="region-filter",
@@ -25,34 +23,25 @@ app.layout = html.Div(style={"fontFamily": "Arial", "padding": "20px"}, children
             {"label": "South", "value": "south"},
             {"label": "West", "value": "west"},
         ],
-        value="all",
-        labelStyle={"display": "inline-block", "marginRight": "15px"}
+        value="all"
     ),
 
     dcc.Graph(id="line-chart")
 ])
 
-# Callback to update graph
+# Callback (safe version)
 @app.callback(
     Output("line-chart", "figure"),
     Input("region-filter", "value")
 )
-def update_graph(selected_region):
+def update_graph(region):
 
-    if selected_region == "all":
-        filtered_df = df
-    else:
-        filtered_df = df[df["region"] == selected_region]
+    dff = df if region == "all" else df[df["region"] == region]
 
-    fig = px.line(
-        filtered_df,
-        x="date",
-        y="sales",
-        title=f"Pink Morsel Sales ({selected_region})"
-    )
-
+    fig = px.line(dff, x="date", y="sales")
     return fig
 
 
+# Run app
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
